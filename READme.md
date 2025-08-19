@@ -8,81 +8,64 @@ Este é um projeto Full Stack de um Gerenciador de Despesas Pessoais, desenvolvi
 * **Registro de Despesas:** Crie, liste, edite e delete despesas, associando cada uma a uma categoria.
 * **Planejamento de Orçamentos (Budgets):** Defina orçamentos mensais por categoria, com funcionalidades de criação, edição, listagem e deleção.
 * **Dashboard Interativo:** Visualize um resumo financeiro completo para qualquer mês com dados, incluindo:
-    * Cards com total orçado, total gasto e saldo.
-    * Gráfico de rosca (Doughnut) com a distribuição de gastos por categoria.
-    * Tabela detalhada comparando o valor gasto vs. orçado para cada categoria.
+  * Cards com total orçado, total gasto e saldo.
+  * Gráfico de rosca (Doughnut) com a distribuição de gastos por categoria.
+  * Tabela detalhada comparando o valor gasto vs. orçado para cada categoria.
 * **Filtros Inteligentes:** A interface permite filtrar visualizações por meses que efetivamente contenham dados, melhorando a experiência do usuário.
 * **Feedback ao Usuário:** Notificações "toast" para ações de sucesso ou erro, proporcionando uma experiência de usuário moderna.
 
 ---
 
-## 🏛️ Arquitetura Utilizada: Clean Architecture
+## 🏛️ Arquitetura Usada: Clean Architecture (Do Jeito Certo!)
 
-O backend deste projeto foi meticulosamente estruturado seguindo os princípios da **Clean Architecture**, popularizada por Robert C. Martin. O objetivo central é criar um sistema desacoplado, testável e independente de detalhes externos como frameworks, banco de dados e interface de usuário. Isso é alcançado através de uma estrita separação de responsabilidades em camadas concêntricas, governadas pela **Regra da Dependência**.
+A gente sabe como projeto de faculdade pode virar uma bagunça, né? Pra evitar isso, o backend foi organizado usando a **Clean Architecture**. A ideia principal é separar o código em camadas, pra que uma coisa não dependa da outra e o projeto fique fácil de mexer no futuro.
 
-> **A Regra da Dependência:** O código-fonte só pode ter dependências que apontam para o interior. Nada em um círculo interno pode saber qualquer coisa sobre um círculo externo. Em particular, o nome de algo declarado em um círculo externo não deve ser mencionado pelo código em um círculo interno.
+A regra de ouro é a **Regra da Dependência**: o código só pode "olhar" pra dentro. Pensa assim: o chefão (círculo de dentro) não pode saber quem são os estagiários (círculos de fora). A comunicação é sempre de fora pra dentro.
 
-Para implementar essa arquitetura em um projeto Java/Spring, o backend foi dividido em 3 módulos Maven distintos, cada um representando uma ou mais camadas da arquitetura.
+Pra forçar essa organização, o projeto foi quebrado em 3 "mini-projetos" (módulos Maven).
 
 ### As Camadas do Projeto
 
-#### 📁 `core` - O Coração do Negócio (Camadas de Entidades e Casos de Uso)
+#### 📁 `core` - O Cérebro do Rolê
 
-Esta é a camada mais interna e protegida. Ela encapsula toda a lógica de negócio da aplicação e não possui nenhuma dependência de frameworks externos.
+Essa é a parte mais importante e protegida. Aqui ficam as "regras do jogo" do nosso aplicativo, e o mais legal: é Java puro, sem nenhuma frescura de Spring, JPA ou qualquer outra coisa.
 
-* **Entidades (`Entities`):** São os objetos de negócio puros (POJOs) que representam os conceitos centrais do domínio (ex: `Expense`, `Category`). Elas contêm os atributos e as regras de negócio mais críticas e são as menos propensas a mudar quando detalhes externos mudam.
+* **Entidades (`Entities`):** São como as "cartinhas" do nosso jogo. Classes simples como `Expense` e `Category` que representam as coisas do nosso sistema.
+* **Casos de Uso (`Use Cases`):** São as "jogadas" que a gente pode fazer. Classes como `RegisterExpenseUseCase` que contêm a lógica do que acontece quando o usuário faz uma ação.
+* **Interfaces de Repositório:** São os "contratos". O `core` diz: "Preciso que alguém salve essa despesa no banco", mas ele não quer saber *como* isso vai ser feito. Ele só define o contrato.
 
-* **Casos de Uso (`Use Cases`):** Orquestram o fluxo de dados de e para as entidades para executar uma tarefa específica do negócio (ex: `RegisterExpenseUseCase`). Eles contêm a lógica da aplicação, validam entradas e aplicam as regras.
+#### 📁 `infrastructure` - A Galera do Trabalho Pesado
 
-* **Interfaces de Repositório:** São os "contratos" definidos pelo `core` que ditam as operações de persistência necessárias (ex: `save`, `findById`). O `core` define *o que* precisa ser feito, mas não se importa com *como* será feito.
+É aqui que a mágica do Spring e do banco de dados acontece. Essa camada faz o trabalho sujo que o `core` pediu.
 
-#### 📁 `infrastructure` - Detalhes de Implementação (Camada de Adaptadores e Frameworks)
+* **Controllers:** É o "porteiro" da nossa API. Ele recebe as requisições da internet (do frontend), pega os dados e passa a bola pro `core` resolver.
+* **Implementações de Repositório:** É o "funcionário" que assinou o contrato do `core`. Ele sabe falar a língua do PostgreSQL e usa o Spring Data JPA pra de fato salvar as coisas no banco.
+* **Mappers:** São os "tradutores". Como o `core` e a `infrastructure` usam objetos um pouco diferentes, os mappers ficam no meio do caminho convertendo um pro outro.
 
-Esta camada externa contém todas as ferramentas e tecnologias. Ela se "adapta" para servir às necessidades do `core`.
+#### 📁 `application` - O Eletricista que Liga Tudo
 
-* **Controllers:** Atuam como adaptadores que convertem as requisições HTTP da web em chamadas para os `Use Cases` do `core`. Eles são a porta de entrada da API REST.
+Esse módulo não tem muita lógica, mas é super importante. Ele é a "cola" que junta todas as peças.
 
-* **Implementações de Repositório:** São as classes concretas que implementam as interfaces de repositório do `core`. É aqui que a tecnologia de persistência (Spring Data JPA, PostgreSQL) é de fato utilizada para executar as operações no banco de dados.
+* **Classe Principal:** Onde fica o `main` que liga o projeto todo. O botão de ON/OFF.
+* **Configuração de Beans:** A parte mais genial. É aqui que a gente fala pro Spring: "Ó, quando o `core` pedir um `CategoryRepository` (o contrato), entrega pra ele o `CategoryRepositoryImpl` (o funcionário) que tá na `infrastructure`". O `core` nunca fica sabendo quem fez o trabalho, mantendo tudo separado e organizado.
 
-* **Mappers:** Classes utilitárias essenciais que traduzem os objetos entre as camadas. Por exemplo, convertem uma entidade de domínio pura (`Category`) em uma entidade JPA anotada (`CategoryJpaEntity`) e vice-versa.
+### Como Funciona na Prática (Criando uma Despesa)
 
-#### 📁 `application` - O Ponto de Partida (Composição e Iniciação)
+1. O frontend manda um `POST /expenses`.
+2. O **`Controller`** (`infrastructure`), nosso porteiro, recebe a requisição.
+3. Ele chama o **`RegisterExpenseUseCase`** (`core`), o cérebro, e entrega os dados.
+4. O `UseCase` faz as validações (o valor é positivo? a categoria existe?).
+5. O `UseCase` fala: "Preciso salvar isso!", e chama o método `save` do contrato `ExpenseRepository` (`core`).
+6. O Spring, que foi configurado pelo `application`, entra em ação e entrega o `ExpenseRepositoryImpl` (`infrastructure`) pra fazer o serviço.
+7. O `RepositoryImpl` usa o `Mapper` pra traduzir o objeto, e manda o Spring Data JPA salvar no PostgreSQL.
+8. Pronto! A resposta volta pelo mesmo caminho e o frontend recebe um "OK, tudo certo!".
 
-Este módulo atua como a "cola" que une o sistema. Sua principal responsabilidade é a **Composição da Raiz (Composition Root)**.
+### E pra que essa trabalheira toda?
 
-* **Classe Principal:** Contém o método `main` e a anotação `@SpringBootApplication` que inicia todo o contexto do Spring.
-
-* **Configuração de Beans:** Através de classes com `@Configuration`, este módulo implementa a **Inversão de Dependência**. É aqui que dizemos ao Spring Framework como "conectar" as abstrações do `core` (as interfaces de repositório) com as implementações concretas do `infrastructure`. O `core` nunca conhece o `infrastructure` diretamente; é o `application` que faz essa ligação em tempo de execução.
-
-### Fluxo de Controle: Um Exemplo Prático (Criar uma Despesa)
-
-1. Uma requisição `POST /expenses` chega do frontend.
-
-2. O **`ExpenseController`** (`infrastructure`) recebe a requisição, valida o corpo (DTO) e extrai os dados brutos.
-
-3. O `Controller` chama o método `execute` do **`RegisterExpenseUseCase`** (`core`), passando os dados de forma simples e pura.
-
-4. O `UseCase` executa suas regras de negócio (ex: verifica se o valor é positivo, se a categoria existe).
-
-5. O `UseCase` chama o método `save` da interface **`ExpenseRepository`** (`core`).
-
-6. O Spring, configurado pelo módulo `application`, injeta a implementação **`ExpenseRepositoryImpl`** (`infrastructure`).
-
-7. A `ExpenseRepositoryImpl` usa seu **`Mapper`** para converter a entidade de domínio `Expense` em uma `ExpenseJpaEntity`.
-
-8. A `ExpenseRepositoryImpl` usa o **Spring Data JPA** para persistir a `ExpenseJpaEntity` no banco de dados PostgreSQL.
-
-9. A resposta flui de volta pelas camadas até o `Controller`, que retorna um status HTTP `201 Created`.
-
-### Benefícios Alcançados
-
-* **Testabilidade:** A lógica de negócio no `core` pode ser testada de forma unitária, sem a necessidade de rodar um servidor web ou um banco de dados.
-
-* **Independência de Frameworks:** O `core` não sabe sobre o Spring. Se um dia quisermos migrar para outro framework (como Quarkus ou Micronaut), a lógica de negócio permanece intacta.
-
-* **Manutenibilidade:** A separação clara de responsabilidades torna o código mais fácil de entender, depurar e estender. Novas funcionalidades podem ser adicionadas com impacto mínimo nas existentes.
-
-* **Flexibilidade:** Trocar o banco de dados, a interface do usuário ou qualquer outro detalhe externo se torna uma tarefa muito mais simples, pois essas tecnologias estão isoladas na camada de `infrastructure`.
+* **Testar fica fácil:** Dá pra testar as regras do jogo no `core` sem precisar ligar o servidor inteiro.
+* **Sem ficar preso:** O `core` tá nem aí pro Spring. Se amanhã a gente quiser usar outro framework, a parte mais importante do código continua funcionando.
+* **Manutenção de boa:** Fica muito mais fácil de achar um bug ou adicionar uma função nova sem quebrar o resto do projeto.
+* **Flexibilidade:** Quer trocar o PostgreSQL por outro banco? É só mexer na `infrastructure`. O `core` nem vai perceber.
 
 ---
 
@@ -163,5 +146,3 @@ Este módulo atua como a "cola" que une o sistema. Sua principal responsabilidad
 
 3.  **Acesse a Aplicação:**
     * Abra seu navegador e acesse `http://localhost:5173`.
-
----
