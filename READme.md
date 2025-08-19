@@ -16,56 +16,57 @@ Este é um projeto Full Stack de um Gerenciador de Despesas Pessoais, desenvolvi
 
 ---
 
-## 🏛️ Arquitetura Usada: Clean Architecture (Do Jeito Certo!)
+## 🏛️ Arquitetura Utilizada: Clean Architecture
 
-A gente sabe como projeto de faculdade pode virar uma bagunça, né? Pra evitar isso, o backend foi organizado usando a **Clean Architecture**. A ideia principal é separar o código em camadas, pra que uma coisa não dependa da outra e o projeto fique fácil de mexer no futuro.
+A estrutura do backend foi planejada com base na **Clean Architecture**, um padrão de design de software que visa criar sistemas robustos, fáceis de manter e testar. A filosofia central é a **separação de interesses (separation of concerns)**, garantindo que a lógica de negócio do projeto seja completamente independente de detalhes de implementação como frameworks, banco de dados ou interfaces de usuário.
 
-A regra de ouro é a **Regra da Dependência**: o código só pode "olhar" pra dentro. Pensa assim: o chefão (círculo de dentro) não pode saber quem são os estagiários (círculos de fora). A comunicação é sempre de fora pra dentro.
+O princípio fundamental que guia toda a estrutura é a **Regra da Dependência**: as dependências do código-fonte devem sempre apontar para dentro, em direção às camadas centrais. Isso significa que as camadas internas, que contêm a lógica de negócio, não devem saber nada sobre as camadas externas, que lidam com tecnologia e detalhes de infraestrutura.
 
-Pra forçar essa organização, o projeto foi quebrado em 3 "mini-projetos" (módulos Maven).
+Para aplicar este modelo de forma prática em um projeto Java/Spring, o backend foi organizado em três módulos Maven, cada um com responsabilidades bem definidas.
 
 ### As Camadas do Projeto
 
-#### 📁 `core` - O Cérebro do Rolê
+#### 📁 `core` - O Núcleo do Negócio
 
-Essa é a parte mais importante e protegida. Aqui ficam as "regras do jogo" do nosso aplicativo, e o mais legal: é Java puro, sem nenhuma frescura de Spring, JPA ou qualquer outra coisa.
+Esta é a camada mais interna e fundamental. Ela contém a essência da aplicação e é totalmente isolada de qualquer tecnologia externa.
 
-* **Entidades (`Entities`):** São como as "cartinhas" do nosso jogo. Classes simples como `Expense` e `Category` que representam as coisas do nosso sistema.
-* **Casos de Uso (`Use Cases`):** São as "jogadas" que a gente pode fazer. Classes como `RegisterExpenseUseCase` que contêm a lógica do que acontece quando o usuário faz uma ação.
-* **Interfaces de Repositório:** São os "contratos". O `core` diz: "Preciso que alguém salve essa despesa no banco", mas ele não quer saber *como* isso vai ser feito. Ele só define o contrato.
+* **Entidades (`Entities`):** Representam os objetos de negócio fundamentais (ex: `Expense`, `Category`). Elas encapsulam os dados e as regras de negócio mais críticas, que são universais para a aplicação, independentemente de como ela é apresentada ou onde os dados são armazenados.
+* **Casos de Uso (`Use Cases`):** Contêm a lógica específica da aplicação. Cada caso de uso orquestra o fluxo de dados para executar uma tarefa de negócio, como `RegisterExpenseUseCase`. Eles definem as operações que o sistema pode realizar, validam entradas e garantem que as regras das entidades sejam respeitadas.
+* **Interfaces de Repositório:** Funcionam como "contratos" ou "portas" que o `core` define para as operações de persistência. O `core` especifica *o que* precisa ser feito (ex: `save`, `findById`), mas delega a responsabilidade de *como* fazer para as camadas externas.
 
-#### 📁 `infrastructure` - A Galera do Trabalho Pesado
+#### 📁 `infrastructure` - Conectores e Ferramentas Externas
 
-É aqui que a mágica do Spring e do banco de dados acontece. Essa camada faz o trabalho sujo que o `core` pediu.
+Esta camada contém todos os detalhes técnicos e as ferramentas que interagem com o mundo exterior. Sua função é "adaptar" as tecnologias externas para servir às necessidades definidas pelo `core`.
 
-* **Controllers:** É o "porteiro" da nossa API. Ele recebe as requisições da internet (do frontend), pega os dados e passa a bola pro `core` resolver.
-* **Implementações de Repositório:** É o "funcionário" que assinou o contrato do `core`. Ele sabe falar a língua do PostgreSQL e usa o Spring Data JPA pra de fato salvar as coisas no banco.
-* **Mappers:** São os "tradutores". Como o `core` e a `infrastructure` usam objetos um pouco diferentes, os mappers ficam no meio do caminho convertendo um pro outro.
+* **Controllers:** São os adaptadores de entrada da API. Eles recebem requisições HTTP, traduzem os dados para um formato que os `Use Cases` entendem e, por fim, convertem a resposta do `core` de volta para um formato HTTP.
+* **Implementações de Repositório:** São as classes que implementam os contratos de repositório definidos no `core`. É aqui que a tecnologia de persistência, como Spring Data JPA e PostgreSQL, é de fato utilizada. Esta camada sabe como executar as operações de banco de dados.
+* **Mappers:** Classes utilitárias que convertem objetos entre as camadas. Por exemplo, transformam uma entidade de domínio (`Expense`) em uma entidade JPA (`ExpenseJpaEntity`), garantindo que a camada `core` nunca precise conhecer os detalhes do JPA.
 
-#### 📁 `application` - O Eletricista que Liga Tudo
+#### 📁 `application` - O Ponto de Partida e Configuração
 
-Esse módulo não tem muita lógica, mas é super importante. Ele é a "cola" que junta todas as peças.
+Este módulo serve como o ponto de entrada e o configurador central da aplicação. Sua principal função é realizar a **Composição da Raiz (Composition Root)**.
 
-* **Classe Principal:** Onde fica o `main` que liga o projeto todo. O botão de ON/OFF.
-* **Configuração de Beans:** A parte mais genial. É aqui que a gente fala pro Spring: "Ó, quando o `core` pedir um `CategoryRepository` (o contrato), entrega pra ele o `CategoryRepositoryImpl` (o funcionário) que tá na `infrastructure`". O `core` nunca fica sabendo quem fez o trabalho, mantendo tudo separado e organizado.
+* **Classe Principal:** Contém o método `main` e a anotação `@SpringBootApplication`, responsável por iniciar o contêiner do Spring e carregar todo o sistema.
+* **Configuração de Beans:** Utilizando classes com `@Configuration`, este módulo implementa o **Princípio da Inversão de Dependência (Dependency Inversion Principle)**. É aqui que as abstrações do `core` (as interfaces) são conectadas às suas implementações concretas do `infrastructure`. O Spring injeta as dependências, garantindo que o `core` permaneça desacoplado e não precise saber quais tecnologias específicas estão sendo usadas.
 
-### Como Funciona na Prática (Criando uma Despesa)
+### Fluxo de Controle: Exemplo de Registro de Despesa
 
-1. O frontend manda um `POST /expenses`.
-2. O **`Controller`** (`infrastructure`), nosso porteiro, recebe a requisição.
-3. Ele chama o **`RegisterExpenseUseCase`** (`core`), o cérebro, e entrega os dados.
-4. O `UseCase` faz as validações (o valor é positivo? a categoria existe?).
-5. O `UseCase` fala: "Preciso salvar isso!", e chama o método `save` do contrato `ExpenseRepository` (`core`).
-6. O Spring, que foi configurado pelo `application`, entra em ação e entrega o `ExpenseRepositoryImpl` (`infrastructure`) pra fazer o serviço.
-7. O `RepositoryImpl` usa o `Mapper` pra traduzir o objeto, e manda o Spring Data JPA salvar no PostgreSQL.
-8. Pronto! A resposta volta pelo mesmo caminho e o frontend recebe um "OK, tudo certo!".
+1.  Uma requisição `POST /expenses` é enviada pelo frontend.
+2.  O **`ExpenseController`** (`infrastructure`) a recebe. Ele valida o DTO da requisição e prepara os dados.
+3.  O `Controller` invoca o **`RegisterExpenseUseCase`** (`core`), passando os dados de forma simples e agnóstica à tecnologia.
+4.  O `UseCase` executa a lógica de negócio (validações, regras).
+5.  O `UseCase` chama o método `save` da interface **`ExpenseRepository`** (um contrato do `core`).
+6.  O Spring, configurado pelo módulo `application`, fornece a implementação concreta: **`ExpenseRepositoryImpl`** (`infrastructure`).
+7.  A `ExpenseRepositoryImpl` usa um **`Mapper`** para converter a entidade do `core` em uma entidade JPA.
+8.  A implementação utiliza o **Spring Data JPA** para persistir a entidade no banco de dados PostgreSQL.
+9.  O resultado retorna pelas camadas, e o `Controller` envia uma resposta HTTP `201 Created`.
 
-### E pra que essa trabalheira toda?
+### Benefícios Desta Abordagem
 
-* **Testar fica fácil:** Dá pra testar as regras do jogo no `core` sem precisar ligar o servidor inteiro.
-* **Sem ficar preso:** O `core` tá nem aí pro Spring. Se amanhã a gente quiser usar outro framework, a parte mais importante do código continua funcionando.
-* **Manutenção de boa:** Fica muito mais fácil de achar um bug ou adicionar uma função nova sem quebrar o resto do projeto.
-* **Flexibilidade:** Quer trocar o PostgreSQL por outro banco? É só mexer na `infrastructure`. O `core` nem vai perceber.
+* **Alta Testabilidade:** A lógica de negócio no `core` pode ser testada de forma isolada, sem a complexidade de frameworks ou bancos de dados, resultando em testes unitários rápidos e confiáveis.
+* **Independência Tecnológica:** O `core` é agnóstico a frameworks. A decisão de usar Spring pode ser alterada no futuro com impacto mínimo na lógica de negócio, que é o ativo mais valioso do software.
+* **Manutenção Simplificada:** Com responsabilidades bem definidas, encontrar e corrigir bugs ou adicionar novas funcionalidades torna-se uma tarefa mais direta e segura.
+* **Flexibilidade:** A arquitetura permite trocar componentes externos com facilidade. Mudar de PostgreSQL para outro banco de dados, por exemplo, requer alterações apenas na camada de `infrastructure`, sem afetar o `core`.
 
 ---
 
