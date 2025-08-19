@@ -8,20 +8,26 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
+/**
+ * Representa uma Despesa (Expense).
+ * É um registro de um gasto realizado.
+ */
 @Data
 @Builder
 @AllArgsConstructor
 public class Expense {
+    /** ID único da despesa. */
     private UUID id;
+
+    /** Descrição do gasto (ex: "Almoço no restaurante"). */
     private String description;
 
-    // Usamos BigDecimal para valores monetários para evitar erros de
-    // arredondamento.
+    /** Valor monetário da despesa. */
     private BigDecimal amount;
 
-    // Usamos LocalDate para representar uma data sem tempo.
+    /** Data em que a despesa ocorreu. */
     private LocalDate date;
 
-    // A despesa pertence a uma categoria, então guardamos o ID dela.
+    /** ID da categoria à qual esta despesa pertence. */
     private UUID categoryId;
 }

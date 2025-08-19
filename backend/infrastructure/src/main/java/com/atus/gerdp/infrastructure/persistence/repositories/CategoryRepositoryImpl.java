@@ -10,34 +10,38 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Implementação do contrato CategoryRepository.
+ * Usa o Spring Data JPA para de fato interagir com o banco de dados.
+ */
 @Component
 public class CategoryRepositoryImpl implements CategoryRepository {
-    private final SpringDataCategoryRepository r;
-    private final CategoryPersistenceMapper m = new CategoryPersistenceMapper();
+    private final SpringDataCategoryRepository springDataRepository;
+    private final CategoryPersistenceMapper mapper = new CategoryPersistenceMapper();
 
-    public CategoryRepositoryImpl(SpringDataCategoryRepository r) {
-        this.r = r;
+    public CategoryRepositoryImpl(SpringDataCategoryRepository springDataRepository) {
+        this.springDataRepository = springDataRepository;
     }
 
     @Override
-    public Category save(Category c) {
-        var j = m.toJpaEntity(c);
-        var s = r.save(j);
-        return m.toDomain(s);
+    public Category save(Category category) {
+        var jpaEntity = mapper.toJpaEntity(category);
+        var savedEntity = springDataRepository.save(jpaEntity);
+        return mapper.toDomain(savedEntity);
     }
 
     @Override
     public Optional<Category> findById(UUID id) {
-        return r.findById(id).map(m::toDomain);
+        return springDataRepository.findById(id).map(mapper::toDomain);
     }
 
     @Override
     public List<Category> findAll() {
-        return r.findAll().stream().map(m::toDomain).collect(Collectors.toList());
+        return springDataRepository.findAll().stream().map(mapper::toDomain).collect(Collectors.toList());
     }
 
     @Override
     public void deleteById(UUID id) {
-        r.deleteById(id);
+        springDataRepository.deleteById(id);
     }
 }

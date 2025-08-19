@@ -11,40 +11,45 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Implementação do contrato ExpenseRepository.
+ * Usa o Spring Data JPA para de fato interagir com o banco de dados.
+ */
 @Component
 public class ExpenseRepositoryImpl implements ExpenseRepository {
-    private final SpringDataExpenseRepository r;
-    private final ExpensePersistenceMapper m = new ExpensePersistenceMapper();
+    private final SpringDataExpenseRepository springDataRepository;
+    private final ExpensePersistenceMapper mapper = new ExpensePersistenceMapper();
 
-    public ExpenseRepositoryImpl(SpringDataExpenseRepository r) {
-        this.r = r;
+    public ExpenseRepositoryImpl(SpringDataExpenseRepository springDataRepository) {
+        this.springDataRepository = springDataRepository;
     }
 
     @Override
-    public Expense save(Expense e) {
-        var j = m.toJpaEntity(e);
-        var s = r.save(j);
-        return m.toDomain(s);
+    public Expense save(Expense expense) {
+        var jpaEntity = mapper.toJpaEntity(expense);
+        var savedEntity = springDataRepository.save(jpaEntity);
+        return mapper.toDomain(savedEntity);
     }
 
     @Override
-    public List<Expense> findByPeriod(YearMonth p) {
-        return r.findByDateBetween(p.atDay(1), p.atEndOfMonth()).stream().map(m::toDomain).collect(Collectors.toList());
+    public List<Expense> findByPeriod(YearMonth period) {
+        var startDate = period.atDay(1);
+        var endDate = period.atEndOfMonth();
+        return springDataRepository.findByDateBetween(startDate, endDate).stream().map(mapper::toDomain).collect(Collectors.toList());
     }
 
     @Override
     public List<Expense> findAll() {
-        return r.findAll().stream().map(m::toDomain).collect(Collectors.toList());
+        return springDataRepository.findAll().stream().map(mapper::toDomain).collect(Collectors.toList());
     }
 
     @Override
     public void deleteById(UUID id) {
-        r.deleteById(id);
+        springDataRepository.deleteById(id);
     }
 
     @Override
     public Optional<Expense> findById(UUID id) {
-        return r.findById(id)
-                .map(m::toDomain);
+        return springDataRepository.findById(id).map(mapper::toDomain);
     }
 }

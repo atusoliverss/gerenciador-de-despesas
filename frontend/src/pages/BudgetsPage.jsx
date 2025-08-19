@@ -3,28 +3,33 @@ import { getBudgetsByPeriod, createOrUpdateBudget, deleteBudget, getAvailableBud
 import { getAllCategories } from '../services/categoryService';
 import { toast } from 'react-toastify';
 
+/**
+ * Página para gerenciar os Orçamentos (Budgets).
+ * Permite criar, listar, editar e deletar orçamentos mensais por categoria.
+ */
 function BudgetsPage() {
   // --- STATES ---
+  // Guarda a lista de orçamentos do mês filtrado.
   const [budgets, setBudgets] = useState([]);
+  // Guarda a lista de todas as categorias para usar nos formulários.
   const [categories, setCategories] = useState([]);
+  // Controla a exibição de mensagens de "carregando".
   const [isLoading, setIsLoading] = useState(false);
-
-  // NOVO: State exclusivo para o FILTRO da lista
+  // Guarda o mês selecionado no filtro da lista.
   const [filterMonth, setFilterMonth] = useState('');
+  // Guarda a lista de meses que têm orçamentos para popular o filtro.
   const [availablePeriods, setAvailablePeriods] = useState([]);
-
-  // NOVO: State unificado para o FORMULÁRIO de criação/edição
+  // Guarda os dados do formulário de criação/edição.
   const [formData, setFormData] = useState({
     categoryId: '',
     amount: '',
     period: new Date().toISOString().slice(0, 7), // Mês atual por padrão
   });
-  
-  // NOVO: State para controlar o modo de edição
+  // Controla se o formulário está em modo de edição ou criação.
   const [isEditing, setIsEditing] = useState(false);
 
   // --- LÓGICA DE DADOS ---
-  // Busca inicial de categorias e períodos disponíveis para o filtro
+  // Busca os dados iniciais (categorias e períodos) quando a página carrega.
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
@@ -51,7 +56,7 @@ function BudgetsPage() {
     fetchInitialData();
   }, []);
 
-  // Busca os orçamentos sempre que o FILTRO de mês mudar
+  // Busca os orçamentos sempre que o mês do filtro é alterado.
   useEffect(() => {
     if (!filterMonth) return;
 
@@ -71,11 +76,13 @@ function BudgetsPage() {
   }, [filterMonth]);
   
   // --- HANDLERS (Ações do Usuário) ---
+  // Atualiza o estado do formulário conforme o usuário digita.
   const handleFormChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
   
+  // Limpa o formulário e sai do modo de edição.
   const resetForm = () => {
     setFormData({
       categoryId: categories.length > 0 ? categories[0].id : '',
@@ -85,6 +92,7 @@ function BudgetsPage() {
     setIsEditing(false);
   }
 
+  // Lida com o envio do formulário (tanto para criar quanto para atualizar).
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.categoryId || !formData.amount || parseFloat(formData.amount) <= 0) {
@@ -102,7 +110,7 @@ function BudgetsPage() {
       await createOrUpdateBudget(budgetData);
       toast.success(`Orçamento ${isEditing ? 'atualizado' : 'salvo'} com sucesso!`);
       resetForm();
-      // Atualiza a lista de orçamentos e também a lista de períodos disponíveis
+      // Atualiza a lista de orçamentos e também a lista de períodos disponíveis.
       const [budgetsRes, periodsRes] = await Promise.all([getBudgetsByPeriod(filterMonth), getAvailableBudgetPeriods()]);
       setBudgets(budgetsRes.data);
       setAvailablePeriods(periodsRes.data);
@@ -111,6 +119,7 @@ function BudgetsPage() {
     }
   };
 
+  // Prepara o formulário para edição quando o botão "Editar" é clicado.
   const handleEditClick = (budget) => {
     setIsEditing(true);
     setFormData({
@@ -121,20 +130,21 @@ function BudgetsPage() {
     document.getElementById('amount-input')?.focus();
   };
 
+  // Deleta um orçamento quando o botão "Deletar" é clicado.
   const handleDelete = async (id) => {
     if (window.confirm('Tem certeza que deseja deletar este orçamento?')) {
       try {
         await deleteBudget(id);
         toast.success('Orçamento deletado com sucesso!');
-        // Atualiza tudo após deletar
+        // Atualiza os dados da tela após a deleção.
         const periodsRes = await getAvailableBudgetPeriods();
         setAvailablePeriods(periodsRes.data);
-        // Se o mês deletado era o que estava sendo filtrado e ele não existe mais,
-        // muda o filtro para o mais recente, se houver.
         if (!periodsRes.data.includes(filterMonth) && periodsRes.data.length > 0) {
             setFilterMonth(periodsRes.data[0]);
         } else {
-            fetchBudgets();
+            // Se o mês ainda existe, apenas recarrega os orçamentos dele.
+            const budgetsRes = await getBudgetsByPeriod(filterMonth);
+            setBudgets(budgetsRes.data);
         }
       } catch (error) {
         toast.error('Não foi possível deletar o orçamento.');
@@ -144,10 +154,10 @@ function BudgetsPage() {
 
   return (
     <div>
+      {/* Formulário para criar ou editar orçamentos */}
       <div className="form-container">
         <h2>{isEditing ? 'Editar Orçamento' : 'Definir Novo Orçamento'}</h2>
         <form onSubmit={handleSubmit}>
-          {/* O formulário agora tem seu próprio seletor de mês */}
           <input name="period" type="month" value={formData.period} onChange={handleFormChange} />
           <select name="categoryId" value={formData.categoryId} onChange={handleFormChange} disabled={isEditing}>
             {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
@@ -160,8 +170,8 @@ function BudgetsPage() {
         </form>
       </div>
 
+      {/* Lista de orçamentos com filtro */}
       <div className="list-container">
-        {/* NOVO: Seção de filtro separada */}
         <div style={{display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem'}}>
           <label htmlFor="filter-month-select"><strong>Filtrar por Mês:</strong></label>
           <select

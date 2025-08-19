@@ -4,5 +4,13 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
-public record RegisterExpenseRequest(String description, BigDecimal amount, LocalDate date, UUID categoryId) {
-}
+/**
+ * DTO para registrar uma nova despesa.
+ * Define os dados que o frontend envia para a API.
+ */
+public record RegisterExpenseRequest(
+    String description, 
+    BigDecimal amount, 
+    LocalDate date, 
+    UUID categoryId
+) {}

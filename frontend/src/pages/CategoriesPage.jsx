@@ -1,18 +1,30 @@
 import React, { useState, useEffect } from 'react';
-// AQUI ESTÁ A CORREÇÃO: Adicionamos 'updateCategory' na linha abaixo
 import { getAllCategories, createCategory, deleteCategory, updateCategory } from '../services/categoryService';
 import { toast } from 'react-toastify';
 import Modal from '../components/Modal';
 import '../components/Modal.css';
 
+/**
+ * Página para gerenciar as Categorias.
+ * Permite criar, listar, editar e deletar categorias.
+ */
 function CategoriesPage() {
+  // --- STATES ---
+  // Guarda a lista de categorias que vem da API.
   const [categories, setCategories] = useState([]);
+  // Guarda o texto do input para criar uma nova categoria.
   const [newCategoryName, setNewCategoryName] = useState('');
+  // Controla a exibição de mensagens de "carregando".
   const [isLoading, setIsLoading] = useState(false);
+  // Controla se o modal de edição está aberto ou fechado.
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // Guarda os dados da categoria que está sendo editada.
   const [editingCategory, setEditingCategory] = useState(null);
+  // Guarda o novo nome da categoria no formulário de edição.
   const [updatedName, setUpdatedName] = useState('');
 
+  // --- LÓGICA DE DADOS ---
+  // Função para buscar a lista de categorias da API.
   const fetchCategories = async () => {
     setIsLoading(true);
     try {
@@ -26,16 +38,19 @@ function CategoriesPage() {
     }
   };
 
+  // Executa a busca de categorias assim que a página é carregada.
   useEffect(() => {
     fetchCategories();
   }, []);
 
+  // --- HANDLERS (Ações do Usuário) ---
+  // Deleta uma categoria após confirmação.
   const handleDelete = async (id) => {
     if (window.confirm('Tem certeza que deseja deletar esta categoria?')) {
       try {
         await deleteCategory(id);
         toast.success('Categoria deletada com sucesso!');
-        fetchCategories();
+        fetchCategories(); // Atualiza a lista
       } catch (error) {
         console.error('Erro ao deletar categoria:', error);
         toast.error('Erro ao deletar. Verifique se não há despesas associadas.');
@@ -43,6 +58,7 @@ function CategoriesPage() {
     }
   };
   
+  // Lida com o envio do formulário de criação.
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!newCategoryName.trim()) {
@@ -60,24 +76,26 @@ function CategoriesPage() {
     }
   };
 
+  // Abre o modal de edição com os dados da categoria clicada.
   const handleOpenEditModal = (category) => {
     setEditingCategory(category);
     setUpdatedName(category.name);
     setIsModalOpen(true);
   };
 
+  // Fecha o modal de edição e limpa os dados.
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingCategory(null);
     setUpdatedName('');
   };
 
+  // Lida com o envio do formulário de edição.
   const handleUpdateSubmit = async (e) => {
     e.preventDefault();
     if (!editingCategory || !updatedName.trim()) return;
 
     try {
-      // Agora a função 'updateCategory' existe porque foi importada
       await updateCategory(editingCategory.id, { name: updatedName });
       toast.success('Categoria atualizada com sucesso!');
       handleCloseModal();
@@ -90,6 +108,7 @@ function CategoriesPage() {
 
   return (
     <div>
+      {/* Formulário para criar uma nova categoria */}
       <div className="form-container">
         <h2>Criar Nova Categoria</h2>
         <form onSubmit={handleSubmit}>
@@ -106,6 +125,7 @@ function CategoriesPage() {
         </form>
       </div>
 
+      {/* Lista de categorias existentes */}
       <div className="list-container">
         <h2>Categorias Existentes</h2>
         {isLoading && <p>Carregando...</p>}
@@ -122,6 +142,7 @@ function CategoriesPage() {
         </ul>
       </div>
 
+      {/* Modal de edição, que só aparece quando isModalOpen é true */}
       <Modal isOpen={isModalOpen} onClose={handleCloseModal} title="Editar Categoria">
         <form onSubmit={handleUpdateSubmit}>
           <input

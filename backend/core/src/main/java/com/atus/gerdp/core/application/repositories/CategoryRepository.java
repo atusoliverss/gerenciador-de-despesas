@@ -7,19 +7,28 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Esta interface é um CONTRATO.
- * Ela diz: "Qualquer um que queira ser um repositório de categorias,
- * PRECISA saber como salvar uma categoria e como buscá-la por ID".
- * A implementação real (com código de banco de dados) será feita depois, no
- * módulo 'infrastructure'.
+ * Define as operações de banco de dados para as Categorias.
+ * É um "contrato" que a camada de infraestrutura deve implementar.
  */
 public interface CategoryRepository {
 
+    /**
+     * Salva ou atualiza uma categoria.
+     */
     Category save(Category category);
 
+    /**
+     * Busca uma categoria pelo seu ID.
+     */
     Optional<Category> findById(UUID id);
 
+    /**
+     * Lista todas as categorias.
+     */
     List<Category> findAll();
 
+    /**
+     * Deleta uma categoria pelo seu ID.
+     */
     void deleteById(UUID id);
 }

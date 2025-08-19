@@ -11,47 +11,50 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Implementação do contrato BudgetRepository.
+ * Usa o Spring Data JPA para de fato interagir com o banco de dados.
+ */
 @Component
 public class BudgetRepositoryImpl implements BudgetRepository {
-    private final SpringDataBudgetRepository r;
-    private final BudgetPersistenceMapper m = new BudgetPersistenceMapper();
+    private final SpringDataBudgetRepository springDataRepository;
+    private final BudgetPersistenceMapper mapper = new BudgetPersistenceMapper();
 
-    public BudgetRepositoryImpl(SpringDataBudgetRepository r) {
-        this.r = r;
+    public BudgetRepositoryImpl(SpringDataBudgetRepository springDataRepository) {
+        this.springDataRepository = springDataRepository;
     }
 
     @Override
-    public Budget save(Budget b) {
-        var j = m.toJpaEntity(b);
-        var s = r.save(j);
-        return m.toDomain(s);
+    public Budget save(Budget budget) {
+        var jpaEntity = mapper.toJpaEntity(budget);
+        var savedEntity = springDataRepository.save(jpaEntity);
+        return mapper.toDomain(savedEntity);
     }
 
     @Override
-    public Optional<Budget> findByCategoryIdAndPeriod(UUID c, YearMonth p) {
-        return r.findByCategory_IdAndPeriod(c, p).map(m::toDomain);
+    public Optional<Budget> findByCategoryIdAndPeriod(UUID categoryId, YearMonth period) {
+        return springDataRepository.findByCategory_IdAndPeriod(categoryId, period).map(mapper::toDomain);
     }
 
     @Override
     public List<Budget> findByPeriod(YearMonth period) {
-        return r.findByPeriod(period).stream()
-                .map(m::toDomain)
+        return springDataRepository.findByPeriod(period).stream()
+                .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }
 
     @Override
     public void deleteById(UUID id) {
-        r.deleteById(id);
+        springDataRepository.deleteById(id);
     }
 
     @Override
     public Optional<Budget> findById(UUID id) {
-        return r.findById(id)
-                .map(m::toDomain);
+        return springDataRepository.findById(id).map(mapper::toDomain);
     }
 
     @Override
     public List<YearMonth> findDistinctPeriods() {
-        return r.findDistinctPeriods();
+        return springDataRepository.findDistinctPeriods();
     }
 }
